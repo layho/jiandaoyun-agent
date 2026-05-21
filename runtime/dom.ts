@@ -41,7 +41,14 @@ export async function smartLocate(
  * Call after every navigation, save, dialog open/close.
  */
 export async function waitForStableDOM(page: Page): Promise<void> {
-  await page.waitForLoadState('networkidle', { timeout: 30_000 });
+  // 简道云 has persistent websockets → networkidle may never fire.
+  // Use a race: wait for networkidle OR fallback after 5s.
+  try {
+    await page.waitForLoadState('networkidle', { timeout: 5_000 });
+  } catch {
+    // Expected: websocket keeps connection alive
+    console.log('[DOM] networkidle fallback — websocket present');
+  }
   await page.waitForTimeout(800);
 }
 

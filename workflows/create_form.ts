@@ -1,34 +1,25 @@
 /**
- * workflows/create_form.ts — V2 Create Form Workflow
+ * workflows/create_form.ts — V2 Create Form Workflow (Verification Phase)
  *
- * Strict SOP for creating a new form in 简道云.
- *
- * Flow:
- *   1. Validate application == 爱马仕
- *   2. Navigate to form management
- *   3. Open create dialog
- *   4. Fill form metadata
- *   5. Confirm creation
- *   6. Validate result
- *
- * All selectors from selectors/form.json registry.
- * All steps wrapped in retry() with recovery on failure.
+ * Verification phase adjustments:
+ *   - Snapshot uses partial DOM (NEVER full page.content)
+ *   - Watchdog enabled (10min hard timeout)
+ *   - Networkidle timeout shortened (5s fallback)
+ *   - Retry capped at 2, recovery at 1
+ *   - Browser ALWAYS closed in finally
  */
 
-import type { Page, BrowserContext } from 'playwright';
+import type { Page, Browser, BrowserContext } from 'playwright';
 import { chromium } from 'playwright';
-
-// --- Runtime imports ---
+import { startWatchdog, stopWatchdog } from '../runtime/watchdog';
 import { smartLocate, waitForStableDOM, getText } from '../runtime/dom';
 import { retry } from '../runtime/retry';
-import { recover, prepareEnvironment, closeModal } from '../runtime/recovery';
+import { prepareEnvironment } from '../runtime/recovery';
+import { captureForPatch } from '../runtime/snapshot';
 import {
   validateWorkflowStart,
   validateWorkflowEnd,
-  validateSave,
 } from '../runtime/validator';
-
-// --- Selector registry ---
 import SELECTORS from '../selectors/form.json';
 
 // ---------------------------------------------------------------------------
@@ -36,11 +27,8 @@ import SELECTORS from '../selectors/form.json';
 // ---------------------------------------------------------------------------
 
 export interface CreateFormInput {
-  /** Form display name (required) */
   name: string;
-  /** Optional description */
   description?: string;
-  /** 简道云 app base URL */
   baseUrl: string;
 }
 
@@ -48,194 +36,105 @@ export interface CreateFormOutput {
   success: boolean;
   formName: string;
   formUrl?: string;
+  error?: string;
 }
 
 // ---------------------------------------------------------------------------
-// Step helpers
+// Steps (modular — not chained)
 // ---------------------------------------------------------------------------
 
-/**
- * Navigate to the form management page.
- */
+async function login(page: Page, baseUrl: string): Promise<void> {
+  console.log('[WORKFLOW] step: login');
+  await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+  await page.waitForTimeout(2_000);
+}
+
 async function navigateToFormManagement(page: Page): Promise<void> {
-  console.log('[WORKFLOW] navigating to form management');
-
-  const navSelector = await smartLocate(
-    page,
-    SELECTORS.navigation.form_management_tab
-  );
-  await navSelector.click();
+  console.log('[WORKFLOW] step: navigate to form management');
+  await prepareEnvironment(page);
+  const nav = await smartLocate(page, SELECTORS.navigation.form_management_tab);
+  await nav.click();
   await waitForStableDOM(page);
-  console.log('[WORKFLOW] form management page loaded');
 }
 
-/**
- * Open the "新建表单" dialog.
- */
 async function openCreateDialog(page: Page): Promise<void> {
-  console.log('[WORKFLOW] opening create form dialog');
-
+  console.log('[WORKFLOW] step: open create dialog');
   const btn = await smartLocate(page, SELECTORS.navigation.new_form_button);
   await btn.click();
   await waitForStableDOM(page);
-
-  // Verify dialog appeared
-  const dialog = await smartLocate(page, SELECTORS.create_form_dialog.dialog);
-  const visible = await dialog.isVisible();
-  if (!visible) {
-    throw new Error('[WORKFLOW] create form dialog did not appear');
-  }
-  console.log('[WORKFLOW] create form dialog opened');
 }
 
-/**
- * Fill the form name and optional description.
- */
-async function fillFormMetadata(input: CreateFormInput, page: Page): Promise<void> {
-  console.log('[WORKFLOW] filling form metadata');
-
-  // Form name
-  const nameInput = await smartLocate(
-    page,
-    SELECTORS.create_form_dialog.form_name_input
-  );
-  await nameInput.click();
-  await nameInput.fill('');
-  await nameInput.fill(input.name);
-
-  const enteredName = await nameInput.inputValue();
-  if (enteredName !== input.name) {
-    throw new Error(
-      `[WORKFLOW] name input mismatch: expected "${input.name}", got "${enteredName}"`
-    );
-  }
-  console.log(`[WORKFLOW] form name set: ${input.name}`);
-
-  // Description (optional)
-  if (input.description) {
-    const descInput = await smartLocate(
-      page,
-      SELECTORS.create_form_dialog.form_description_input
-    );
-    await descInput.click();
-    await descInput.fill('');
-    await descInput.fill(input.description);
-    console.log(`[WORKFLOW] description set`);
-  }
+async function fillFormName(page: Page, name: string): Promise<void> {
+  console.log(`[WORKFLOW] step: fill name "${name}"`);
+  const input = await smartLocate(page, SELECTORS.create_form_dialog.form_name_input);
+  await input.click();
+  await input.fill('');
+  await input.fill(name);
 }
 
-/**
- * Click confirm and wait for the form to be created.
- */
 async function confirmCreation(page: Page): Promise<void> {
-  console.log('[WORKFLOW] confirming form creation');
-
-  const confirmBtn = await smartLocate(
-    page,
-    SELECTORS.create_form_dialog.confirm_button
-  );
-  await confirmBtn.click();
-
-  // Wait for network to settle after create API call
-  await page.waitForLoadState('networkidle', { timeout: 30_000 });
-  await page.waitForTimeout(1_000);
-
-  console.log('[WORKFLOW] creation confirmed');
+  console.log('[WORKFLOW] step: confirm');
+  const btn = await smartLocate(page, SELECTORS.create_form_dialog.confirm_button);
+  await btn.click();
+  await waitForStableDOM(page);
 }
 
-/**
- * Verify the form appears in the form list.
- */
-async function verifyFormCreated(
-  page: Page,
-  formName: string
-): Promise<void> {
-  console.log(`[WORKFLOW] verifying form "${formName}" was created`);
-
+async function verifyFormInList(page: Page, name: string): Promise<boolean> {
+  console.log(`[WORKFLOW] step: verify "${name}" in list`);
   await waitForStableDOM(page);
-
-  // Check form list for the new form name
-  const formListContainer = await smartLocate(
-    page,
-    SELECTORS.navigation.form_list_container
-  );
-
-  const text = await getText(formListContainer);
-  if (text.includes(formName)) {
-    console.log(`[WORKFLOW] form "${formName}" found in list`);
-  } else {
-    console.warn(
-      `[WORKFLOW] form "${formName}" not visible in list — may still be creating`
-    );
-  }
+  const list = await smartLocate(page, SELECTORS.navigation.form_list_container);
+  const text = await getText(list);
+  return text.includes(name);
 }
 
 // ---------------------------------------------------------------------------
-// Main workflow
+// Main workflow (fixed-chain execution for verification)
 // ---------------------------------------------------------------------------
 
 export async function createForm(input: CreateFormInput): Promise<CreateFormOutput> {
   console.log('[WORKFLOW] ======== create_form start ========');
   console.log(`[WORKFLOW] target: ${input.name}`);
 
-  let browser: ReturnType<typeof chromium.launch> extends Promise<infer T> ? T : never;
-  let page: Page;
+  startWatchdog();
+
+  let browser: Browser | undefined;
+  let context: BrowserContext | undefined;
+  let page: Page | undefined;
 
   try {
-    // --- Launch browser ---
-    const username = process.env.JDY_USERNAME;
-    const password = process.env.JDY_PASSWORD;
-
-    if (!username || !password) {
-      throw new Error(
-        '[WORKFLOW] Missing credentials. Ensure JDY_USERNAME and JDY_PASSWORD are set in .env.'
-      );
-    }
-
     browser = await chromium.launch({ headless: false });
-    const context = await browser.newContext({
+    context = await browser.newContext({
       viewport: { width: 1440, height: 900 },
       locale: 'zh-CN',
     });
     page = await context.newPage();
 
-    // --- Login ---
-    console.log('[WORKFLOW] logging in');
-    await page.goto(input.baseUrl, { waitUntil: 'networkidle', timeout: 60_000 });
-    await waitForStableDOM(page);
+    // Step 1: Login
+    await retry(() => login(page!, input.baseUrl));
 
-    // --- Step 1: Validate application ---
-    await validateWorkflowStart(page);
+    // Step 2: Validate application
+    await retry(() => validateWorkflowStart(page!));
 
-    // --- Step 2: Navigate to form management ---
-    await retry(() => navigateToFormManagement(page));
+    // Step 3: Navigate to form management
+    await retry(() => navigateToFormManagement(page!));
 
-    // --- Step 3: Open create dialog ---
-    await retry(async () => {
-      await prepareEnvironment(page);
-      await openCreateDialog(page);
-    });
+    // Step 4: Open create dialog
+    await retry(() => openCreateDialog(page!));
 
-    // --- Step 4: Fill metadata ---
-    await retry(async () => {
-      await fillFormMetadata(input, page);
-    });
+    // Step 5: Fill form name
+    await retry(() => fillFormName(page!, input.name));
 
-    // --- Step 5: Confirm creation ---
-    await retry(async () => {
-      await confirmCreation(page);
-    });
+    // Step 6: Confirm creation
+    await retry(() => confirmCreation(page!));
 
-    // --- Step 6: Verify ---
-    await retry(async () => {
-      await verifyFormCreated(page, input.name);
-    });
+    // Step 7: Verify
+    const verified = await retry(() => verifyFormInList(page!, input.name));
 
-    // --- Step 7: End validation ---
-    await validateWorkflowEnd(page);
+    // Step 8: Validate end
+    await retry(() => validateWorkflowEnd(page!));
 
     const output: CreateFormOutput = {
-      success: true,
+      success: verified,
       formName: input.name,
       formUrl: page.url(),
     };
@@ -243,31 +142,41 @@ export async function createForm(input: CreateFormInput): Promise<CreateFormOutp
     console.log('[WORKFLOW] ======== create_form success ========');
     return output;
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     console.error('[WORKFLOW] ======== create_form FAILED ========');
-    console.error(error);
+    console.error(message);
 
-    // === Patch loop entry point ===
-    // When called from OpenClaw orchestration, the error + DOM snapshot
-    // will be fed back to DeepSeek for a targeted patch.
-    if (page!) {
+    // Capture partial snapshot for patch loop (level 2 — NOT full DOM)
+    if (page) {
       try {
-        const snapshot = await page.content();
-        console.log(`[WORKFLOW] DOM snapshot captured (${snapshot.length} chars)`);
+        const snapshot = await captureForPatch(page, `error_${input.name}`);
+        console.log(`[WORKFLOW] snapshot: level=${snapshot.level}, dom=${snapshot.domLength} chars`);
       } catch {
-        console.warn('[WORKFLOW] could not capture DOM snapshot');
+        console.warn('[WORKFLOW] snapshot capture failed');
       }
     }
 
-    return { success: false, formName: input.name };
+    return { success: false, formName: input.name, error: message };
   } finally {
-    if (browser!) {
-      await browser.close();
+    stopWatchdog();
+
+    // ALWAYS close browser — prevent memory leak
+    if (page) {
+      try { await page.close(); } catch { /* already closed */ }
     }
+    if (context) {
+      try { await context.close(); } catch { /* already closed */ }
+    }
+    if (browser) {
+      try { await browser.close(); } catch { /* already closed */ }
+    }
+
+    console.log('[WORKFLOW] browser closed');
   }
 }
 
 // ---------------------------------------------------------------------------
-// CLI entry point (for standalone testing)
+// CLI
 // ---------------------------------------------------------------------------
 
 if (require.main === module) {
@@ -277,19 +186,13 @@ if (require.main === module) {
     process.exit(1);
   }
 
-  const input: CreateFormInput = {
-    name: args[0],
-    baseUrl: args[1],
-    description: args[2],
-  };
-
-  createForm(input)
-    .then((result) => {
-      console.log('Result:', JSON.stringify(result, null, 2));
-      process.exit(result.success ? 0 : 1);
+  createForm({ name: args[0], baseUrl: args[1], description: args[2] })
+    .then((r) => {
+      console.log('Result:', JSON.stringify(r, null, 2));
+      process.exit(r.success ? 0 : 1);
     })
-    .catch((err) => {
-      console.error('Fatal:', err);
+    .catch((e) => {
+      console.error('Fatal:', e);
       process.exit(1);
     });
 }

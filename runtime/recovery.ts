@@ -64,7 +64,7 @@ export async function recover(
   await closeModal(page);
   await waitForStableDOM(page);
 
-  const locator = await retry(() => smartLocate(page, selectors));
+  const locator = await retry(() => smartLocate(page, selectors), 1); // Recovery max 1 retry
 
   console.log('[RECOVERY] recovery complete');
   return locator;

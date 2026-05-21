@@ -1,39 +1,25 @@
 /**
- * workflows/create_field.ts — V2 Create Field Workflow
+ * workflows/create_field.ts — V2 Create Field Workflow (Verification Phase)
  *
- * Strict SOP for adding a field to an existing form.
- *
- * Flow:
- *   1. Validate application == 爱马仕
- *   2. Open target form in designer
- *   3. Drag field type from palette onto canvas
- *   4. Configure field properties (name, required, etc.)
- *   5. Save field configuration
- *   6. Save form
- *   7. Validate result
- *
- * All selectors from selectors/field.json + form.json registry.
- * All steps wrapped in retry() with rerender recovery.
+ * Verification phase adjustments:
+ *   - Partial DOM snapshot only
+ *   - Watchdog enabled
+ *   - Networkidle with 5s fallback
+ *   - Browser ALWAYS closed
  */
 
-import type { Page, BrowserContext } from 'playwright';
+import type { Page, Browser, BrowserContext } from 'playwright';
 import { chromium } from 'playwright';
-
+import { startWatchdog, stopWatchdog } from '../runtime/watchdog';
 import { smartLocate, waitForStableDOM, getText } from '../runtime/dom';
 import { retry } from '../runtime/retry';
+import { prepareEnvironment } from '../runtime/recovery';
 import { smartDrag, dragFieldToCanvas } from '../runtime/drag';
-import {
-  prepareEnvironment,
-  recover,
-  withRerenderRecovery,
-  recoverFromDragFailure,
-  verifyCanvasHealth,
-} from '../runtime/recovery';
+import { captureForPatch } from '../runtime/snapshot';
 import {
   validateWorkflowStart,
   validateWorkflowEnd,
 } from '../runtime/validator';
-
 import FIELD_SELECTORS from '../selectors/field.json';
 import FORM_SELECTORS from '../selectors/form.json';
 
@@ -55,17 +41,11 @@ export type FieldType =
   | 'sub_form';
 
 export interface CreateFieldInput {
-  /** Target form name (must already exist) */
   formName: string;
-  /** Field display name */
   fieldName: string;
-  /** Field type */
   fieldType: FieldType;
-  /** Optional field description */
   fieldDescription?: string;
-  /** Make this field required */
   required?: boolean;
-  /** 简道云 app URL */
   baseUrl: string;
 }
 
@@ -74,10 +54,11 @@ export interface CreateFieldOutput {
   formName: string;
   fieldName: string;
   fieldType: FieldType;
+  error?: string;
 }
 
 // ---------------------------------------------------------------------------
-// Field type name mapping
+// Field type → selector map
 // ---------------------------------------------------------------------------
 
 const FIELD_TYPE_SELECTOR_MAP: Record<FieldType, string[][]> = {
@@ -95,369 +76,187 @@ const FIELD_TYPE_SELECTOR_MAP: Record<FieldType, string[][]> = {
 };
 
 // ---------------------------------------------------------------------------
-// Step helpers
+// Steps
 // ---------------------------------------------------------------------------
 
-/**
- * Navigate to form management and open the target form in designer.
- */
-async function openFormInDesigner(
-  page: Page,
-  formName: string
-): Promise<void> {
-  console.log(`[WORKFLOW] opening form "${formName}" in designer`);
+async function login(page: Page, baseUrl: string): Promise<void> {
+  console.log('[WORKFLOW] step: login');
+  await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+  await page.waitForTimeout(2_000);
+}
 
-  // Navigate to form management tab
-  const formMgmt = await smartLocate(
-    page,
-    FORM_SELECTORS.navigation.form_management_tab
-  );
+async function openFormInDesigner(page: Page, formName: string): Promise<void> {
+  console.log(`[WORKFLOW] step: open form "${formName}"`);
+  await prepareEnvironment(page);
+
+  const formMgmt = await smartLocate(page, FORM_SELECTORS.navigation.form_management_tab);
   await formMgmt.click();
   await waitForStableDOM(page);
 
-  // Click on the target form to open it
-  const formLinkSelectors = [
-    `[data-testid='form-item-${formName}']`,
-    `[aria-label='${formName}']`,
+  const formLink = await smartLocate(page, [
     `text=${formName}`,
-  ];
-
-  const formLink = await smartLocate(page, formLinkSelectors);
+    `[aria-label='${formName}']`,
+  ]);
   await formLink.first().click();
   await waitForStableDOM(page);
-
-  console.log(`[WORKFLOW] form "${formName}" opened in designer`);
 }
 
-/**
- * Drag the specified field type from the palette onto the canvas.
- */
-async function addFieldToCanvas(
-  page: Page,
-  fieldType: FieldType
-): Promise<void> {
-  console.log(`[WORKFLOW] adding field: ${fieldType}`);
-
-  // Verify canvas is ready
-  const canvasHealthy = await verifyCanvasHealth(page);
-  if (!canvasHealthy) {
-    await prepareEnvironment(page);
-  }
-
-  // Drag field from palette to canvas
+async function dragFieldOnCanvas(page: Page, fieldType: FieldType): Promise<void> {
+  console.log(`[WORKFLOW] step: drag field "${fieldType}"`);
   const fieldTypeSelectors = FIELD_TYPE_SELECTOR_MAP[fieldType];
-
-  try {
-    await dragFieldToCanvas(page, fieldTypeSelectors[0]);
-  } catch (dragError) {
-    console.warn('[WORKFLOW] initial drag failed, running recovery');
-    await recoverFromDragFailure(page, fieldTypeSelectors[0]);
-
-    // Retry drag after recovery
-    await dragFieldToCanvas(page, fieldTypeSelectors[0]);
-  }
-
-  console.log(`[WORKFLOW] field "${fieldType}" placed on canvas`);
+  await dragFieldToCanvas(page, fieldTypeSelectors[0]);
 }
 
-/**
- * Open the field configuration panel by clicking the newly added field.
- */
-async function openFieldConfig(page: Page): Promise<void> {
-  console.log('[WORKFLOW] opening field configuration');
+async function configureAndSaveField(page: Page, input: CreateFieldInput): Promise<void> {
+  console.log('[WORKFLOW] step: configure field');
 
-  // Click the last field container on the canvas (newly added field)
-  const fieldContainers = page.locator(
-    "[data-testid='field-container'], [role='listitem']"
-  );
-  const count = await fieldContainers.count();
-  if (count === 0) {
-    throw new Error('[WORKFLOW] no field containers found on canvas');
-  }
-
-  await fieldContainers.last().click();
+  // Click the newly added field to open config panel
+  const containers = page.locator("[data-testid='field-container'], [role='listitem']");
+  const count = await containers.count();
+  if (count === 0) throw new Error('[WORKFLOW] no field containers on canvas');
+  await containers.last().click();
   await waitForStableDOM(page);
 
-  // Verify config panel is visible
-  const configPanel = await smartLocate(
-    page,
-    FIELD_SELECTORS.field_config.config_panel
-  );
-  const visible = await configPanel.first().isVisible();
-  if (!visible) {
-    throw new Error('[WORKFLOW] field configuration panel did not open');
-  }
-
-  console.log('[WORKFLOW] field configuration panel opened');
-}
-
-/**
- * Fill in field properties: name, description, required toggle.
- */
-async function configureField(input: CreateFieldInput, page: Page): Promise<void> {
-  console.log('[WORKFLOW] configuring field properties');
-
   // Field name
-  const nameInput = await smartLocate(
-    page,
-    FIELD_SELECTORS.field_config.field_name_input
-  );
+  const nameInput = await smartLocate(page, FIELD_SELECTORS.field_config.field_name_input);
   await nameInput.click();
   await nameInput.fill('');
   await nameInput.fill(input.fieldName);
-
-  const enteredName = await nameInput.inputValue();
-  if (enteredName !== input.fieldName) {
-    throw new Error(
-      `[WORKFLOW] field name mismatch: expected "${input.fieldName}", got "${enteredName}"`
-    );
-  }
-  console.log(`[WORKFLOW] field name set: ${input.fieldName}`);
-
-  // Description (optional)
-  if (input.fieldDescription) {
-    const descInput = await smartLocate(
-      page,
-      FIELD_SELECTORS.field_config.field_description_input
-    );
-    await descInput.click();
-    await descInput.fill('');
-    await descInput.fill(input.fieldDescription);
-    console.log('[WORKFLOW] field description set');
-  }
+  console.log(`[WORKFLOW] field name: ${input.fieldName}`);
 
   // Required toggle
   if (input.required) {
-    console.log('[WORKFLOW] setting field as required');
-
-    const toggle = await smartLocate(
-      page,
-      FIELD_SELECTORS.field_config.required_toggle
-    );
-
-    // Check current state and toggle if needed
-    const ariaChecked = await toggle.first().getAttribute('aria-checked');
-    if (ariaChecked !== 'true') {
+    const toggle = await smartLocate(page, FIELD_SELECTORS.field_config.required_toggle);
+    const checked = await toggle.first().getAttribute('aria-checked');
+    if (checked !== 'true') {
       await toggle.first().click();
       await waitForStableDOM(page);
     }
-
-    const newState = await toggle.first().getAttribute('aria-checked');
-    console.log(`[WORKFLOW] required toggle state: ${newState}`);
+    console.log('[WORKFLOW] required: true');
   }
-}
 
-/**
- * Save field configuration and close config panel.
- */
-async function saveFieldConfig(page: Page): Promise<void> {
-  console.log('[WORKFLOW] saving field configuration');
-
-  const saveBtn = await smartLocate(
-    page,
-    FIELD_SELECTORS.field_config.save_field_button
-  );
+  // Save field config
+  const saveBtn = await smartLocate(page, FIELD_SELECTORS.field_config.save_field_button);
   await saveBtn.first().click();
-
-  // Network settle after save
-  await page.waitForLoadState('networkidle', { timeout: 20_000 });
-  await page.waitForTimeout(800);
-
-  console.log('[WORKFLOW] field configuration saved');
+  await waitForStableDOM(page);
+  console.log('[WORKFLOW] field config saved');
 }
 
-/**
- * Save the entire form.
- */
 async function saveForm(page: Page): Promise<void> {
-  console.log('[WORKFLOW] saving form');
-
+  console.log('[WORKFLOW] step: save form');
   await prepareEnvironment(page);
-
-  const saveBtn = await smartLocate(
-    page,
-    FIELD_SELECTORS.form_actions.save_form_button
-  );
+  const saveBtn = await smartLocate(page, FIELD_SELECTORS.form_actions.save_form_button);
   await saveBtn.first().click();
-
-  // Network settle after form save
-  await page.waitForLoadState('networkidle', { timeout: 20_000 });
-  await page.waitForTimeout(1_000);
-
+  await waitForStableDOM(page);
   console.log('[SAVE] form saved');
 }
 
-/**
- * Verify the field appears on the canvas after save.
- */
-async function verifyFieldOnCanvas(
-  page: Page,
-  fieldName: string
-): Promise<void> {
-  console.log(`[WORKFLOW] verifying field "${fieldName}" on canvas`);
-
+async function verifyFieldOnCanvas(page: Page, fieldName: string): Promise<boolean> {
+  console.log(`[WORKFLOW] step: verify field "${fieldName}"`);
   await waitForStableDOM(page);
-
   const canvas = await smartLocate(page, [
     "[data-testid='form-designer-canvas']",
     "[aria-label='表单设计区']",
   ]);
-
-  const canvasText = await getText(canvas.first());
-  if (canvasText.includes(fieldName)) {
-    console.log(`[WORKFLOW] field "${fieldName}" verified on canvas`);
-  } else {
-    console.warn(
-      `[WORKFLOW] field "${fieldName}" not found in canvas text — may need manual check`
-    );
-  }
+  const text = await getText(canvas.first());
+  return text.includes(fieldName);
 }
 
 // ---------------------------------------------------------------------------
-// Main workflow
+// Main
 // ---------------------------------------------------------------------------
 
-export async function createField(
-  input: CreateFieldInput
-): Promise<CreateFieldOutput> {
+export async function createField(input: CreateFieldInput): Promise<CreateFieldOutput> {
   console.log('[WORKFLOW] ======== create_field start ========');
   console.log(`[WORKFLOW] form: ${input.formName}, field: ${input.fieldName} (${input.fieldType})`);
 
-  let browser: Awaited<ReturnType<typeof chromium.launch>>;
-  let page: Page;
+  startWatchdog();
+
+  let browser: Browser | undefined;
+  let context: BrowserContext | undefined;
+  let page: Page | undefined;
 
   try {
-    const username = process.env.JDY_USERNAME;
-    const password = process.env.JDY_PASSWORD;
-
-    if (!username || !password) {
-      throw new Error(
-        '[WORKFLOW] Missing credentials. Ensure JDY_USERNAME and JDY_PASSWORD are set in .env.'
-      );
-    }
-
     browser = await chromium.launch({ headless: false });
-    const context = await browser.newContext({
+    context = await browser.newContext({
       viewport: { width: 1440, height: 900 },
       locale: 'zh-CN',
     });
     page = await context.newPage();
 
-    // --- Login ---
-    console.log('[WORKFLOW] logging in');
-    await page.goto(input.baseUrl, { waitUntil: 'networkidle', timeout: 60_000 });
-    await waitForStableDOM(page);
+    // Step 1: Login
+    await retry(() => login(page!, input.baseUrl));
 
-    // --- Step 1: Validate application ---
-    await validateWorkflowStart(page);
+    // Step 2: Validate
+    await retry(() => validateWorkflowStart(page!));
 
-    // --- Step 2: Open target form in designer ---
-    await retry(async () => {
-      await prepareEnvironment(page);
-      await openFormInDesigner(page, input.formName);
-    });
+    // Step 3: Open form
+    await retry(() => openFormInDesigner(page!, input.formName));
 
-    // --- Step 3: Drag field to canvas ---
-    await retry(async () => {
-      await addFieldToCanvas(page, input.fieldType);
-    });
+    // Step 4: Drag field
+    await retry(() => dragFieldOnCanvas(page!, input.fieldType));
 
-    // --- Step 4: Open field config panel ---
-    await retry(async () => {
-      await openFieldConfig(page);
-    });
+    // Step 5: Configure + save field
+    await retry(() => configureAndSaveField(page!, input));
 
-    // --- Step 5: Configure field properties ---
-    await retry(async () => {
-      // Use rerender recovery — config panel may rerender on input
-      await withRerenderRecovery(
-        page,
-        () => configureField(input, page),
-        FIELD_SELECTORS.field_config.config_panel
-      );
-    });
+    // Step 6: Save form
+    await retry(() => saveForm(page!));
 
-    // --- Step 6: Save field configuration ---
-    await retry(async () => {
-      await withRerenderRecovery(
-        page,
-        () => saveFieldConfig(page),
-        FIELD_SELECTORS.field_config.save_field_button
-      );
-    });
+    // Step 7: Verify
+    const verified = await retry(() => verifyFieldOnCanvas(page!, input.fieldName));
 
-    // --- Step 7: Save form ---
-    await retry(() => saveForm(page));
-
-    // --- Step 8: Verify ---
-    await retry(() => verifyFieldOnCanvas(page, input.fieldName));
-
-    // --- Step 9: End validation ---
-    await validateWorkflowEnd(page);
-
-    const output: CreateFieldOutput = {
-      success: true,
-      formName: input.formName,
-      fieldName: input.fieldName,
-      fieldType: input.fieldType,
-    };
+    // Step 8: End validation
+    await retry(() => validateWorkflowEnd(page!));
 
     console.log('[WORKFLOW] ======== create_field success ========');
-    return output;
+    return { success: verified, formName: input.formName, fieldName: input.fieldName, fieldType: input.fieldType };
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     console.error('[WORKFLOW] ======== create_field FAILED ========');
-    console.error(error);
+    console.error(message);
 
-    if (page!) {
+    if (page) {
       try {
-        const snapshot = await page.content();
-        console.log(`[WORKFLOW] DOM snapshot captured (${snapshot.length} chars)`);
-      } catch {
-        console.warn('[WORKFLOW] could not capture DOM snapshot');
-      }
+        const snapshot = await captureForPatch(page, `error_${input.fieldName}`);
+        console.log(`[WORKFLOW] snapshot: level=${snapshot.level}, dom=${snapshot.domLength} chars`);
+      } catch { /* snapshot failed */ }
     }
 
-    return {
-      success: false,
-      formName: input.formName,
-      fieldName: input.fieldName,
-      fieldType: input.fieldType,
-    };
+    return { success: false, formName: input.formName, fieldName: input.fieldName, fieldType: input.fieldType, error: message };
   } finally {
-    if (browser!) {
-      await browser.close();
-    }
+    stopWatchdog();
+
+    if (page) try { await page.close(); } catch { /* ok */ }
+    if (context) try { await context.close(); } catch { /* ok */ }
+    if (browser) try { await browser.close(); } catch { /* ok */ }
+    console.log('[WORKFLOW] browser closed');
   }
 }
 
 // ---------------------------------------------------------------------------
-// CLI entry point
+// CLI
 // ---------------------------------------------------------------------------
 
 if (require.main === module) {
   const args = process.argv.slice(2);
   if (args.length < 4) {
-    console.error(
-      'Usage: npx ts-node workflows/create_field.ts <formName> <fieldName> <fieldType> <baseUrl> [required:true|false]'
-    );
+    console.error('Usage: npx ts-node workflows/create_field.ts <formName> <fieldName> <fieldType> <baseUrl> [required]');
     process.exit(1);
   }
 
-  const input: CreateFieldInput = {
+  createField({
     formName: args[0],
     fieldName: args[1],
     fieldType: args[2] as FieldType,
     baseUrl: args[3],
     required: args[4] === 'true',
-  };
-
-  createField(input)
-    .then((result) => {
-      console.log('Result:', JSON.stringify(result, null, 2));
-      process.exit(result.success ? 0 : 1);
+  })
+    .then((r) => {
+      console.log('Result:', JSON.stringify(r, null, 2));
+      process.exit(r.success ? 0 : 1);
     })
-    .catch((err) => {
-      console.error('Fatal:', err);
+    .catch((e) => {
+      console.error('Fatal:', e);
       process.exit(1);
     });
 }
