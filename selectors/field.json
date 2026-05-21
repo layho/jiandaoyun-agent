@@ -1,0 +1,157 @@
+{
+  "$schema": "./schema.json",
+  "$description": "Selector registry for field operations — V2 SOP. Only data-testid, aria-label, role, placeholder, text selector. No React hash classNames.",
+  "version": "2.0.0",
+
+  "field_palette": {
+    "container": [
+      "[data-testid='field-palette']",
+      "[aria-label='字段面板']",
+      "[role='region'][aria-label='字段']"
+    ],
+    "field_type_group": [
+      "[data-testid='field-group']",
+      "[aria-label='字段类型']"
+    ]
+  },
+
+  "field_types": {
+    "single_line_text": [
+      "[data-testid='field-type-single-line']",
+      "[aria-label='单行文本']",
+      "text=单行文本"
+    ],
+    "multi_line_text": [
+      "[data-testid='field-type-multi-line']",
+      "[aria-label='多行文本']",
+      "text=多行文本"
+    ],
+    "number": [
+      "[data-testid='field-type-number']",
+      "[aria-label='数字']",
+      "text=数字"
+    ],
+    "date_time": [
+      "[data-testid='field-type-date-time']",
+      "[aria-label='日期时间']",
+      "text=日期时间"
+    ],
+    "radio": [
+      "[data-testid='field-type-radio']",
+      "[aria-label='单选按钮组']",
+      "text=单选按钮组"
+    ],
+    "checkbox_group": [
+      "[data-testid='field-type-checkbox']",
+      "[aria-label='复选框组']",
+      "text=复选框组"
+    ],
+    "dropdown": [
+      "[data-testid='field-type-dropdown']",
+      "[aria-label='下拉框']",
+      "text=下拉框"
+    ],
+    "attachment": [
+      "[data-testid='field-type-attachment']",
+      "[aria-label='附件']",
+      "text=附件"
+    ],
+    "image": [
+      "[data-testid='field-type-image']",
+      "[aria-label='图片']",
+      "text=图片"
+    ],
+    "member": [
+      "[data-testid='field-type-member']",
+      "[aria-label='成员']",
+      "text=成员"
+    ],
+    "sub_form": [
+      "[data-testid='field-type-subform']",
+      "[aria-label='子表单']",
+      "text=子表单"
+    ]
+  },
+
+  "field_drag_source": [
+    "[data-testid='field-drag-handle']",
+    "[aria-label='拖拽']",
+    "[draggable='true']"
+  ],
+
+  "form_designer": {
+    "canvas": [
+      "[data-testid='form-designer-canvas']",
+      "[aria-label='表单设计区']",
+      "[role='region'][aria-label='表单设计']"
+    ],
+    "drop_zone": [
+      "[data-testid='form-drop-zone']",
+      "[aria-label='放置区域']",
+      "[data-drop-zone='true']"
+    ],
+    "field_container": [
+      "[data-testid='field-container']",
+      "[role='listitem']"
+    ],
+    "empty_canvas_hint": [
+      "[data-testid='empty-canvas']",
+      "text=拖拽字段到此处"
+    ]
+  },
+
+  "field_config": {
+    "config_panel": [
+      "[data-testid='field-config-panel']",
+      "[aria-label='字段属性']",
+      "[role='region'][aria-label='属性配置']"
+    ],
+    "field_name_input": [
+      "[data-testid='field-name-input']",
+      "[aria-label='字段名称']",
+      "[placeholder*='字段名称']",
+      "input[name='fieldName']"
+    ],
+    "field_description_input": [
+      "[data-testid='field-description-input']",
+      "[aria-label='字段描述']",
+      "[placeholder*='描述']",
+      "textarea[name='fieldDescription']"
+    ],
+    "required_toggle": [
+      "[data-testid='field-required']",
+      "[aria-label='必填']",
+      "[role='switch']"
+    ],
+    "unique_toggle": [
+      "[data-testid='field-unique']",
+      "[aria-label='不允许重复值']",
+      "[aria-label='唯一值']",
+      "[role='switch']"
+    ],
+    "save_field_button": [
+      "[data-testid='save-field-config']",
+      "[aria-label='确定']",
+      "[aria-label='保存字段']",
+      "button:has-text('确定')"
+    ],
+    "delete_field_button": [
+      "[data-testid='delete-field']",
+      "[aria-label='删除字段']",
+      "button:has-text('删除')"
+    ]
+  },
+
+  "form_actions": {
+    "save_form_button": [
+      "[data-testid='save-form']",
+      "[aria-label='保存表单']",
+      "button:has-text('保存')"
+    ],
+    "publish_form_button": [
+      "[data-testid='publish-form']",
+      "[aria-label='发布']",
+      "button:has-text('发布')"
+    ]
+  }
+}

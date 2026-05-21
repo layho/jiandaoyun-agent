@@ -1,0 +1,141 @@
+{
+  "$schema": "./schema.json",
+  "$description": "Selector registry for form operations — V2 SOP. Only data-testid, aria-label, role, placeholder, text selector. No React hash classNames.",
+  "version": "2.0.0",
+
+  "app": {
+    "app_name_container": [
+      "[data-app-name]"
+    ],
+    "app_title": [
+      "[aria-label='应用名称']",
+      "h1"
+    ]
+  },
+
+  "navigation": {
+    "form_management_tab": [
+      "[data-testid='form-management']",
+      "[aria-label='表单管理']",
+      "a:has-text('表单管理')",
+      "text=表单管理"
+    ],
+    "new_form_button": [
+      "[data-testid='create-form']",
+      "[aria-label='新建表单']",
+      "[aria-label='创建表单']",
+      "button:has-text('新建表单')",
+      "button:has-text('创建表单')"
+    ],
+    "form_list_container": [
+      "[data-testid='form-list']",
+      "[role='list']",
+      "[aria-label='表单列表']"
+    ]
+  },
+
+  "create_form_dialog": {
+    "dialog": [
+      "[data-testid='create-form-dialog']",
+      "[role='dialog']",
+      "[aria-label='新建表单']"
+    ],
+    "form_name_input": [
+      "[data-testid='form-name-input']",
+      "[aria-label='表单名称']",
+      "[placeholder*='表单名称']",
+      "input[name='formName']"
+    ],
+    "form_description_input": [
+      "[data-testid='form-description-input']",
+      "[aria-label='表单描述']",
+      "[placeholder*='描述']",
+      "textarea[name='description']"
+    ],
+    "confirm_button": [
+      "[data-testid='confirm-create-form']",
+      "[aria-label='确定']",
+      "[aria-label='确认']",
+      "button:has-text('确定')",
+      "button:has-text('确认')",
+      "button:has-text('创建')"
+    ],
+    "cancel_button": [
+      "[data-testid='cancel-create-form']",
+      "[aria-label='取消']",
+      "button:has-text('取消')"
+    ]
+  },
+
+  "form_detail": {
+    "form_title": [
+      "[data-testid='form-title']",
+      "[aria-label='表单标题']",
+      "h2"
+    ],
+    "add_field_button": [
+      "[data-testid='add-field']",
+      "[aria-label='添加字段']",
+      "button:has-text('添加字段')"
+    ],
+    "save_form_button": [
+      "[data-testid='save-form']",
+      "[aria-label='保存表单']",
+      "[aria-label='保存']",
+      "button:has-text('保存')"
+    ],
+    "publish_form_button": [
+      "[data-testid='publish-form']",
+      "[aria-label='发布']",
+      "button:has-text('发布')"
+    ],
+    "form_saved_indicator": [
+      "[data-testid='save-success']",
+      "[aria-label='保存成功']",
+      "text=保存成功"
+    ]
+  },
+
+  "modal": {
+    "modal_overlay": [
+      "[role='dialog']",
+      "[aria-modal='true']"
+    ],
+    "close_button": [
+      "[aria-label='关闭']",
+      "[data-testid='modal-close']",
+      "button:has-text('关闭')"
+    ],
+    "confirm_modal_button": [
+      "[data-testid='modal-confirm']",
+      "[aria-label='确定']",
+      "button:has-text('确定')"
+    ],
+    "cancel_modal_button": [
+      "[data-testid='modal-cancel']",
+      "[aria-label='取消']",
+      "button:has-text('取消')"
+    ]
+  },
+
+  "toast": {
+    "success_toast": [
+      "[data-testid='toast-success']",
+      "[aria-label='操作成功']",
+      "text=成功"
+    ],
+    "error_toast": [
+      "[data-testid='toast-error']",
+      "[aria-label='操作失败']",
+      "text=失败"
+    ]
+  },
+
+  "loading": {
+    "spinner": [
+      "[data-testid='loading-spinner']",
+      "[role='progressbar']",
+      "[aria-label='加载中']"
+    ]
+  }
+}

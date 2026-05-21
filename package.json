@@ -1,0 +1,21 @@
+{
+  "name": "jiandaoyun-agent",
+  "version": "2.0.0",
+  "private": true,
+  "description": "简道云 OpenClaw Agent — V2 SOP Workflow Engine",
+  "main": "workflows/create_form.ts",
+  "scripts": {
+    "create-form": "npx ts-node workflows/create_form.ts",
+    "check": "npx tsc --noEmit",
+    "lint": "npx ts-standard"
+  },
+  "dependencies": {
+    "playwright": "^1.52.0",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "@types/node": "^22.0.0",
+    "ts-node": "^10.9.2"
+  }
+}
