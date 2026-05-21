@@ -1,0 +1,110 @@
+{
+  "$schema": "./schema.json",
+  "$description": "Selector registry for data relation /联动 operations — V2 SOP. Only semantic selectors.",
+  "version": "2.0.0",
+
+  "relation_management": {
+    "tab": [
+      "[data-testid='relation-management']",
+      "[aria-label='数据联动']",
+      "[aria-label='表单联动']",
+      "a:has-text('数据联动')",
+      "a:has-text('表单联动')"
+    ],
+    "new_relation_button": [
+      "[data-testid='create-relation']",
+      "[aria-label='新建联动']",
+      "button:has-text('新建联动')",
+      "button:has-text('添加联动')"
+    ]
+  },
+
+  "create_relation_dialog": {
+    "dialog": [
+      "[data-testid='create-relation-dialog']",
+      "[role='dialog']",
+      "[aria-label='新建数据联动']"
+    ],
+    "source_form_select": [
+      "[data-testid='source-form-select']",
+      "[aria-label='源表单']",
+      "select[name='sourceForm']"
+    ],
+    "target_form_select": [
+      "[data-testid='target-form-select']",
+      "[aria-label='目标表单']",
+      "select[name='targetForm']"
+    ],
+    "source_field_select": [
+      "[data-testid='source-field-select']",
+      "[aria-label='源字段']",
+      "select[name='sourceField']"
+    ],
+    "target_field_select": [
+      "[data-testid='target-field-select']",
+      "[aria-label='目标字段']",
+      "select[name='targetField']"
+    ],
+    "filter_condition_add": [
+      "[data-testid='add-filter-condition']",
+      "[aria-label='添加过滤条件']",
+      "button:has-text('添加条件')"
+    ],
+    "filter_field_select": [
+      "[data-testid='filter-field-select']",
+      "[aria-label='过滤字段']",
+      "select[name='filterField']"
+    ],
+    "filter_operator_select": [
+      "[data-testid='filter-operator-select']",
+      "[aria-label='运算符']",
+      "select[name='filterOperator']"
+    ],
+    "filter_value_input": [
+      "[data-testid='filter-value-input']",
+      "[aria-label='值']",
+      "[placeholder*='值']",
+      "input[name='filterValue']"
+    ],
+    "confirm_button": [
+      "[data-testid='confirm-relation']",
+      "[aria-label='确定']",
+      "button:has-text('确定')"
+    ],
+    "cancel_button": [
+      "[data-testid='cancel-relation']",
+      "[aria-label='取消']",
+      "button:has-text('取消')"
+    ]
+  },
+
+  "relation_list": {
+    "container": [
+      "[data-testid='relation-list']",
+      "[role='list']",
+      "[aria-label='联动列表']"
+    ],
+    "item": [
+      "[data-testid='relation-item']",
+      "[role='listitem']"
+    ],
+    "delete_button": [
+      "[data-testid='delete-relation']",
+      "[aria-label='删除联动']",
+      "button:has-text('删除')"
+    ]
+  },
+
+  "save_indicator": {
+    "success": [
+      "[data-testid='save-success']",
+      "[aria-label='保存成功']",
+      "text=保存成功"
+    ],
+    "error": [
+      "[data-testid='save-error']",
+      "[aria-label='保存失败']",
+      "text=保存失败"
+    ]
+  }
+}

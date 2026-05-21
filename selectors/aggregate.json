@@ -1,0 +1,120 @@
+{
+  "$schema": "./schema.json",
+  "$description": "Selector registry for aggregate table /聚合表 operations — V2 SOP. V10.4.0+ new version only.",
+  "version": "2.0.0",
+
+  "aggregate_management": {
+    "tab": [
+      "[data-testid='aggregate-management']",
+      "[aria-label='聚合表']",
+      "a:has-text('聚合表')"
+    ],
+    "new_aggregate_button": [
+      "[data-testid='create-aggregate']",
+      "[aria-label='新建聚合表']",
+      "button:has-text('新建聚合表')"
+    ]
+  },
+
+  "create_aggregate_dialog": {
+    "dialog": [
+      "[data-testid='create-aggregate-dialog']",
+      "[role='dialog']",
+      "[aria-label='新建聚合表']"
+    ],
+    "name_input": [
+      "[data-testid='aggregate-name-input']",
+      "[aria-label='聚合表名称']",
+      "[placeholder*='名称']",
+      "input[name='aggregateName']"
+    ],
+    "source_form_select": [
+      "[data-testid='source-form-select']",
+      "[aria-label='数据源表单']",
+      "select[name='sourceForm']"
+    ],
+    "confirm_button": [
+      "[data-testid='confirm-aggregate']",
+      "[aria-label='确定']",
+      "button:has-text('确定')"
+    ]
+  },
+
+  "aggregate_config": {
+    "config_panel": [
+      "[data-testid='aggregate-config-panel']",
+      "[aria-label='聚合表配置']",
+      "[role='region'][aria-label='配置']"
+    ],
+    "row_dimension_select": [
+      "[data-testid='row-dimension-select']",
+      "[aria-label='行维度']",
+      "select[name='rowDimension']"
+    ],
+    "row_dimension_add": [
+      "[data-testid='add-row-dimension']",
+      "[aria-label='添加行维度']",
+      "button:has-text('添加行维度')"
+    ],
+    "column_dimension_select": [
+      "[data-testid='column-dimension-select']",
+      "[aria-label='列维度']",
+      "select[name='columnDimension']"
+    ],
+    "indicator_select": [
+      "[data-testid='indicator-select']",
+      "[aria-label='指标']",
+      "select[name='indicator']"
+    ],
+    "indicator_add": [
+      "[data-testid='add-indicator']",
+      "[aria-label='添加指标']",
+      "button:has-text('添加指标')"
+    ],
+    "indicator_type_select": [
+      "[data-testid='indicator-type-select']",
+      "[aria-label='指标类型']",
+      "select[name='indicatorType']"
+    ],
+    "indicator_field_select": [
+      "[data-testid='indicator-field-select']",
+      "[aria-label='指标字段']",
+      "select[name='indicatorField']"
+    ],
+    "filter_add": [
+      "[data-testid='add-filter']",
+      "[aria-label='添加筛选条件']",
+      "button:has-text('添加筛选')"
+    ],
+    "save_button": [
+      "[data-testid='save-aggregate']",
+      "[aria-label='保存聚合表']",
+      "button:has-text('保存')"
+    ]
+  },
+
+  "aggregate_list": {
+    "container": [
+      "[data-testid='aggregate-list']",
+      "[role='list']",
+      "[aria-label='聚合表列表']"
+    ],
+    "item": [
+      "[data-testid='aggregate-item']",
+      "[role='listitem']"
+    ]
+  },
+
+  "save_indicator": {
+    "success": [
+      "[data-testid='save-success']",
+      "[aria-label='保存成功']",
+      "text=保存成功"
+    ],
+    "error": [
+      "[data-testid='save-error']",
+      "[aria-label='保存失败']",
+      "text=保存失败"
+    ]
+  }
+}
