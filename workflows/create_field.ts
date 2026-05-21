@@ -11,6 +11,7 @@
 import type { Page, Browser, BrowserContext } from 'playwright';
 import { chromium } from 'playwright';
 import { startWatchdog, stopWatchdog } from '../runtime/watchdog';
+import { login } from '../runtime/auth';
 import { smartLocate, waitForStableDOM, getText } from '../runtime/dom';
 import { retry } from '../runtime/retry';
 import { prepareEnvironment } from '../runtime/recovery';
@@ -79,11 +80,7 @@ const FIELD_TYPE_SELECTOR_MAP: Record<FieldType, string[][]> = {
 // Steps
 // ---------------------------------------------------------------------------
 
-async function login(page: Page, baseUrl: string): Promise<void> {
-  console.log('[WORKFLOW] step: login');
-  await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 });
-  await page.waitForTimeout(2_000);
-}
+
 
 async function openFormInDesigner(page: Page, formName: string): Promise<void> {
   console.log(`[WORKFLOW] step: open form "${formName}"`);
@@ -184,7 +181,7 @@ export async function createField(input: CreateFieldInput): Promise<CreateFieldO
     });
     page = await context.newPage();
 
-    // Step 1: Login
+    // Step 1: Login (auto-fill credentials from .env)
     await retry(() => login(page!, input.baseUrl));
 
     // Step 2: Validate
