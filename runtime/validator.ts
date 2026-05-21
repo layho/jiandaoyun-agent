@@ -19,18 +19,77 @@ import { getText, isVisible } from './dom';
 export async function validateApplication(page: Page): Promise<void> {
   console.log('[VALIDATION] checking application context');
 
+  // Step 1: Check if we're on the dashboard (app list), not yet inside an app
+  const appListItems = page.locator('.app-list [class*="app-card"], .app-list [class*="app-item"], [class*="appCard"], [class*="appItem"]');
+  
+  // Also try generic text-based detection
+  const hasAppList = await page.locator('.app-list').count() > 0;
+  
+  if (hasAppList) {
+    console.log('[VALIDATION] on dashboard — navigating into 爱马仕 app');
+    
+    // Find and click "爱马仕" in the app list
+    const hermesSelectors = [
+      'text=爱马仕',
+      '[aria-label*="爱马仕"]',
+      '[title*="爱马仕"]',
+      'a:has-text("爱马仕")',
+    ];
+    
+    let clicked = false;
+    for (const sel of hermesSelectors) {
+      const el = page.locator(sel).first();
+      if (await el.count() > 0 && await el.isVisible().catch(() => false)) {
+        console.log(`[VALIDATION] clicking 爱马仕 via: ${sel}`);
+        await el.click();
+        clicked = true;
+        break;
+      }
+    }
+    
+    if (!clicked) {
+      throw new Error('[VALIDATION] Could not find "爱马仕" app on dashboard. Check app list.');
+    }
+    
+    // Wait for app to load
+    await page.waitForTimeout(3_000);
+    try {
+      await page.waitForLoadState('networkidle', { timeout: 5_000 });
+    } catch {
+      console.log('[VALIDATION] networkidle fallback — websocket');
+    }
+    await page.waitForTimeout(1_000);
+  }
+
+  // Step 2: Verify we're in 爱马仕 by checking page content
   let appName = '';
-  const selectors = ['[data-app-name]', '[aria-label="应用名称"]', 'h1'];
+  const selectors = ['[data-app-name]', '[aria-label="应用名称"]', 'h1', '.current-app', '.app-name'];
 
   for (const sel of selectors) {
     const loc = page.locator(sel);
-    if ((await loc.count()) > 0) {
-      appName = await getText(loc.first());
-      if (appName) break;
+    const count = await loc.count();
+    if (count > 0) {
+      for (let i = 0; i < count; i++) {
+        const text = await loc.nth(i).textContent();
+        if (text && text.includes('爱马仕')) {
+          appName = text.trim();
+          break;
+        }
+      }
+    }
+    if (appName) break;
+  }
+
+  // Step 3: Fallback — check entire page text
+  if (!appName) {
+    const bodyText = await page.locator('body').innerText();
+    if (bodyText.includes('爱马仕')) {
+      appName = '爱马仕';
+      console.log('[VALIDATION] found 爱马仕 in page body text');
     }
   }
 
-  if (!appName.includes('爱马仕')) {
+  if (!appName || !appName.includes('爱马仕')) {
     throw new Error(
       `[VALIDATION] Forbidden application: "${appName}". Expected "爱马仕". Workflow aborted.`
     );
