@@ -1,0 +1,204 @@
+{
+  "$schema": "./schema.json",
+  "$description": "Selector registry for Smart Assistant Pro / 智能助手Pro operations — V2 SOP. 14 node types supported.",
+  "version": "2.0.0",
+
+  "assistant_management": {
+    "tab": [
+      "[data-testid='assistant-management']",
+      "[aria-label='智能助手']",
+      "a:has-text('智能助手')"
+    ],
+    "new_assistant_button": [
+      "[data-testid='create-assistant']",
+      "[aria-label='新建智能助手']",
+      "button:has-text('新建智能助手')"
+    ]
+  },
+
+  "create_assistant_dialog": {
+    "dialog": [
+      "[data-testid='create-assistant-dialog']",
+      "[role='dialog']",
+      "[aria-label='新建智能助手']"
+    ],
+    "name_input": [
+      "[data-testid='assistant-name-input']",
+      "[aria-label='名称']",
+      "[placeholder*='名称']",
+      "input[name='assistantName']"
+    ],
+    "source_form_select": [
+      "[data-testid='source-form-select']",
+      "[aria-label='触发表单']",
+      "select[name='sourceForm']"
+    ],
+    "trigger_type_select": [
+      "[data-testid='trigger-type-select']",
+      "[aria-label='触发方式']",
+      "select[name='triggerType']"
+    ],
+    "confirm_button": [
+      "[data-testid='confirm-assistant']",
+      "[aria-label='确定']",
+      "button:has-text('确定')"
+    ]
+  },
+
+  "workflow_editor": {
+    "canvas": [
+      "[data-testid='workflow-canvas']",
+      "[aria-label='工作流画布']",
+      "[role='region'][aria-label='工作流设计']"
+    ],
+    "add_node_button": [
+      "[data-testid='add-node']",
+      "[aria-label='添加节点']",
+      "button:has-text('添加节点')"
+    ],
+    "node_list": [
+      "[data-testid='node-list']",
+      "[role='list']"
+    ]
+  },
+
+  "node_types": {
+    "create_record": [
+      "[data-testid='node-create-record']",
+      "[aria-label='新增记录']",
+      "text=新增记录"
+    ],
+    "update_record": [
+      "[data-testid='node-update-record']",
+      "[aria-label='修改记录']",
+      "text=修改记录"
+    ],
+    "delete_record": [
+      "[data-testid='node-delete-record']",
+      "[aria-label='删除记录']",
+      "text=删除记录"
+    ],
+    "query_record": [
+      "[data-testid='node-query-record']",
+      "[aria-label='查询记录']",
+      "text=查询记录"
+    ],
+    "send_notification": [
+      "[data-testid='node-send-notification']",
+      "[aria-label='发送通知']",
+      "text=发送通知"
+    ],
+    "send_email": [
+      "[data-testid='node-send-email']",
+      "[aria-label='发送邮件']",
+      "text=发送邮件"
+    ],
+    "call_webhook": [
+      "[data-testid='node-call-webhook']",
+      "[aria-label='调用Webhook']",
+      "text=调用Webhook"
+    ],
+    "condition_branch": [
+      "[data-testid='node-condition']",
+      "[aria-label='条件分支']",
+      "text=条件分支"
+    ],
+    "loop": [
+      "[data-testid='node-loop']",
+      "[aria-label='循环']",
+      "text=循环"
+    ],
+    "delay": [
+      "[data-testid='node-delay']",
+      "[aria-label='延时']",
+      "text=延时"
+    ],
+    "calculation": [
+      "[data-testid='node-calculation']",
+      "[aria-label='计算']",
+      "text=计算"
+    ],
+    "data_query": [
+      "[data-testid='node-data-query']",
+      "[aria-label='数据查询']",
+      "text=数据查询"
+    ],
+    "approval": [
+      "[data-testid='node-approval']",
+      "[aria-label='审批']",
+      "text=审批"
+    ],
+    "end_node": [
+      "[data-testid='node-end']",
+      "[aria-label='结束']",
+      "text=结束"
+    ]
+  },
+
+  "node_config": {
+    "config_panel": [
+      "[data-testid='node-config-panel']",
+      "[aria-label='节点配置']",
+      "[role='region'][aria-label='配置']"
+    ],
+    "target_form_select": [
+      "[data-testid='target-form-select']",
+      "[aria-label='目标表单']",
+      "select[name='targetForm']"
+    ],
+    "field_mapping": [
+      "[data-testid='field-mapping']",
+      "[aria-label='字段映射']"
+    ],
+    "field_mapping_add": [
+      "[data-testid='add-field-mapping']",
+      "[aria-label='添加字段映射']",
+      "button:has-text('添加映射')"
+    ],
+    "source_field_select": [
+      "[data-testid='map-source-field']",
+      "[aria-label='源字段']",
+      "select[name='sourceField']"
+    ],
+    "target_field_select": [
+      "[data-testid='map-target-field']",
+      "[aria-label='目标字段']",
+      "select[name='targetField']"
+    ],
+    "save_node_button": [
+      "[data-testid='save-node-config']",
+      "[aria-label='保存节点']",
+      "button:has-text('确定')"
+    ]
+  },
+
+  "assistant_actions": {
+    "save_button": [
+      "[data-testid='save-assistant']",
+      "[aria-label='保存']",
+      "button:has-text('保存')"
+    ],
+    "enable_toggle": [
+      "[data-testid='toggle-assistant']",
+      "[aria-label='启用']",
+      "[role='switch']"
+    ],
+    "publish_button": [
+      "[data-testid='publish-assistant']",
+      "[aria-label='发布']",
+      "button:has-text('发布')"
+    ]
+  },
+
+  "assistant_list": {
+    "container": [
+      "[data-testid='assistant-list']",
+      "[role='list']",
+      "[aria-label='智能助手列表']"
+    ],
+    "item": [
+      "[data-testid='assistant-item']",
+      "[role='listitem']"
+    ]
+  }
+}

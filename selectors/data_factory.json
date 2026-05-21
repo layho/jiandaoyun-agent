@@ -1,0 +1,176 @@
+{
+  "$schema": "./schema.json",
+  "$description": "Selector registry for Data Factory / 数据工厂 operations — V2 SOP.",
+  "version": "2.0.0",
+
+  "data_factory_management": {
+    "tab": [
+      "[data-testid='data-factory-management']",
+      "[aria-label='数据工厂']",
+      "a:has-text('数据工厂')"
+    ],
+    "new_factory_button": [
+      "[data-testid='create-data-factory']",
+      "[aria-label='新建数据流']",
+      "button:has-text('新建数据流')"
+    ]
+  },
+
+  "create_factory_dialog": {
+    "dialog": [
+      "[data-testid='create-factory-dialog']",
+      "[role='dialog']",
+      "[aria-label='新建数据流']"
+    ],
+    "name_input": [
+      "[data-testid='factory-name-input']",
+      "[aria-label='数据流名称']",
+      "[placeholder*='名称']",
+      "input[name='factoryName']"
+    ],
+    "source_form_select": [
+      "[data-testid='source-form-select']",
+      "[aria-label='数据源']",
+      "select[name='sourceForm']"
+    ],
+    "confirm_button": [
+      "[data-testid='confirm-factory']",
+      "[aria-label='确定']",
+      "button:has-text('确定')"
+    ]
+  },
+
+  "data_flow_editor": {
+    "canvas": [
+      "[data-testid='data-flow-canvas']",
+      "[aria-label='数据流画布']",
+      "[role='region'][aria-label='数据流设计']"
+    ],
+    "add_input_node": [
+      "[data-testid='add-input-node']",
+      "[aria-label='添加输入节点']",
+      "button:has-text('输入')"
+    ],
+    "add_transform_node": [
+      "[data-testid='add-transform-node']",
+      "[aria-label='添加处理节点']",
+      "button:has-text('处理')"
+    ],
+    "add_output_node": [
+      "[data-testid='add-output-node']",
+      "[aria-label='添加输出节点']",
+      "button:has-text('输出')"
+    ]
+  },
+
+  "node_types": {
+    "input_form": [
+      "[data-testid='node-input-form']",
+      "[aria-label='表单输入']",
+      "text=表单输入"
+    ],
+    "input_aggregate": [
+      "[data-testid='node-input-aggregate']",
+      "[aria-label='聚合表输入']",
+      "text=聚合表输入"
+    ],
+    "union": [
+      "[data-testid='node-union']",
+      "[aria-label='合并']",
+      "text=合并"
+    ],
+    "join": [
+      "[data-testid='node-join']",
+      "[aria-label='连接']",
+      "text=连接"
+    ],
+    "filter": [
+      "[data-testid='node-filter']",
+      "[aria-label='筛选']",
+      "text=筛选"
+    ],
+    "sort": [
+      "[data-testid='node-sort']",
+      "[aria-label='排序']",
+      "text=排序"
+    ],
+    "group": [
+      "[data-testid='node-group']",
+      "[aria-label='分组汇总']",
+      "text=分组汇总"
+    ],
+    "field_calc": [
+      "[data-testid='node-field-calc']",
+      "[aria-label='字段计算']",
+      "text=字段计算"
+    ],
+    "field_set": [
+      "[data-testid='node-field-set']",
+      "[aria-label='字段设置']",
+      "text=字段设置"
+    ],
+    "output_form": [
+      "[data-testid='node-output-form']",
+      "[aria-label='输出到表单']",
+      "text=输出到表单"
+    ],
+    "output_aggregate": [
+      "[data-testid='node-output-aggregate']",
+      "[aria-label='输出到聚合表']",
+      "text=输出到聚合表"
+    ]
+  },
+
+  "node_config": {
+    "config_panel": [
+      "[data-testid='node-config-panel']",
+      "[aria-label='节点配置']",
+      "[role='region'][aria-label='配置']"
+    ],
+    "field_select": [
+      "[data-testid='field-select']",
+      "[aria-label='选择字段']",
+      "select[name='field']"
+    ],
+    "condition_input": [
+      "[data-testid='condition-input']",
+      "[aria-label='筛选条件']",
+      "[placeholder*='条件']"
+    ],
+    "save_node_button": [
+      "[data-testid='save-node-config']",
+      "[aria-label='保存节点']",
+      "button:has-text('确定')"
+    ]
+  },
+
+  "factory_actions": {
+    "save_button": [
+      "[data-testid='save-factory']",
+      "[aria-label='保存']",
+      "button:has-text('保存')"
+    ],
+    "run_button": [
+      "[data-testid='run-factory']",
+      "[aria-label='手动执行']",
+      "button:has-text('手动执行')"
+    ],
+    "publish_button": [
+      "[data-testid='publish-factory']",
+      "[aria-label='发布']",
+      "button:has-text('发布')"
+    ]
+  },
+
+  "factory_list": {
+    "container": [
+      "[data-testid='factory-list']",
+      "[role='list']",
+      "[aria-label='数据流列表']"
+    ],
+    "item": [
+      "[data-testid='factory-item']",
+      "[role='listitem']"
+    ]
+  }
+}
