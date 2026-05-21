@@ -12,7 +12,7 @@
 import type { Page, Browser, BrowserContext } from 'playwright';
 import { chromium } from 'playwright';
 import { startWatchdog, stopWatchdog } from '../runtime/watchdog';
-import { login } from '../runtime/auth';
+import { navigateToApp, performLogin } from '../runtime/auth';
 import { smartLocate, waitForStableDOM, getText } from '../runtime/dom';
 import { retry } from '../runtime/retry';
 import { prepareEnvironment } from '../runtime/recovery';
@@ -106,8 +106,11 @@ export async function createForm(input: CreateFormInput): Promise<CreateFormOutp
     });
     page = await context.newPage();
 
-    // Step 1: Login (auto-fill credentials from .env)
-    await retry(() => login(page!, input.baseUrl));
+    // Step 1: Navigate (once — no retry of navigation)
+    await navigateToApp(page!, input.baseUrl);
+
+    // Step 2: Login (retry-safe)
+    await retry(() => performLogin(page!));
 
     // Step 2: Validate application
     await retry(() => validateWorkflowStart(page!));

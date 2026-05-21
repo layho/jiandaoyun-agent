@@ -93,15 +93,21 @@ export async function isLoggedIn(page: Page): Promise<boolean> {
 }
 
 /**
- * Perform login using credentials from .env.
- * Skips if already logged in.
+ * Navigate to the target app URL.
+ * Call ONCE — do NOT wrap in retry.
  */
-export async function login(page: Page, baseUrl: string): Promise<void> {
-  console.log('[AUTH] ======== login start ========');
-
-  // Navigate to the app
+export async function navigateToApp(page: Page, baseUrl: string): Promise<void> {
+  console.log('[AUTH] navigating to', baseUrl);
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 });
   await page.waitForTimeout(2_000);
+}
+
+/**
+ * Perform login using credentials from .env.
+ * Safe to retry — does NOT re-navigate.
+ */
+export async function performLogin(page: Page): Promise<void> {
+  console.log('[AUTH] ======== performLogin start ========');
 
   // Check if we're already logged in (existing session)
   if (await isLoggedIn(page)) {
